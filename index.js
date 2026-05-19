@@ -4,7 +4,7 @@ dns.setServers(["8.8.8.8", "8.8.4.4"]);
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 dotenv.config();
 const port = process.env.PORT;
 const uri = process.env.MONGO_URI;
@@ -25,7 +25,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
-    const db = client.db("pawfeet");
+    const db = client.db("petfeet");
     const allpetCollection = db.collection("allpets");
 
     app.get("/all-pet", async (req, res) => {
@@ -37,6 +37,11 @@ async function run() {
       const allpetData = req.body;
       console.log(allpetData);
       const result = await allpetCollection.insertOne(allpetData);
+      res.json(result);
+    });
+    app.get("/all-pet/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await allpetCollection.findOne({ _id: new ObjectId(id) });
       res.json(result);
     });
 
