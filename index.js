@@ -27,9 +27,15 @@ async function run() {
 
     const db = client.db("petfeet");
     const allpetCollection = db.collection("allpets");
+    const listingsCollection = db.collection("listings");
 
     app.get("/all-pet", async (req, res) => {
       const result = await allpetCollection.find().toArray();
+      res.json(result);
+    });
+    app.get("/all-pet/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await allpetCollection.findOne({ _id: new ObjectId(id) });
       res.json(result);
     });
 
@@ -39,9 +45,10 @@ async function run() {
       const result = await allpetCollection.insertOne(allpetData);
       res.json(result);
     });
-    app.get("/all-pet/:id", async (req, res) => {
-      const { id } = req.params;
-      const result = await allpetCollection.findOne({ _id: new ObjectId(id) });
+
+    app.post("/listing", async (req, res) => {
+      const listingData = req.body;
+      const result = await listingsCollection.insertOne(listingData);
       res.json(result);
     });
 
