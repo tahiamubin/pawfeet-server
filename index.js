@@ -38,6 +38,13 @@ async function run() {
       const result = await allpetCollection.findOne({ _id: new ObjectId(id) });
       res.json(result);
     });
+    app.get("/listing/:userId", async (req, res) => {
+      const { userId } = res.params;
+      const result = await listingsCollection
+        .findOne({ userId: userId })
+        .toArray();
+      res.json(result);
+    });
 
     app.post("/all-pet", async (req, res) => {
       const allpetData = req.body;
