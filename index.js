@@ -38,13 +38,7 @@ async function run() {
       const result = await allpetCollection.findOne({ _id: new ObjectId(id) });
       res.json(result);
     });
-    app.get("/listing/:userEmail", async (req, res) => {
-      const { userEmail } = req.params;
-      const result = await listingsCollection
-        .find({ userEmail: userEmail })
-        .toArray();
-      res.json(result);
-    });
+    
 
     app.post("/all-pet", async (req, res) => {
       const allpetData = req.body;
@@ -52,7 +46,20 @@ async function run() {
       const result = await allpetCollection.insertOne(allpetData);
       res.json(result);
     });
+  
 
+     app.get("/listing/:userEmail", async (req, res) => {
+      const { userEmail } = req.params;
+      const result = await listingsCollection
+        .find({ userEmail: userEmail })
+        .toArray();
+      res.json(result);
+    });
+    app.delete("/listing/:_id" , async(req, res) => {
+      const { _id } = req.params;
+      const result = await listingsCollection.deleteOne({_id: new ObjectId(_id)})
+      res.json(result)
+    })
     app.post("/listing", async (req, res) => {
       const listingData = req.body;
       const result = await listingsCollection.insertOne(listingData);
