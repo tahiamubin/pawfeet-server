@@ -29,6 +29,8 @@ async function run() {
     const allpetCollection = db.collection("allpets");
     const listingsCollection = db.collection("listings");
 
+    // all pet page
+
     app.get("/all-pet", async (req, res) => {
       const result = await allpetCollection.find().toArray();
       res.json(result);
@@ -38,7 +40,6 @@ async function run() {
       const result = await allpetCollection.findOne({ _id: new ObjectId(id) });
       res.json(result);
     });
-    
 
     app.post("/all-pet", async (req, res) => {
       const allpetData = req.body;
@@ -46,20 +47,30 @@ async function run() {
       const result = await allpetCollection.insertOne(allpetData);
       res.json(result);
     });
-  
 
-     app.get("/listing/:userEmail", async (req, res) => {
+    // listings page
+
+    app.get("/listing/:userEmail", async (req, res) => {
       const { userEmail } = req.params;
       const result = await listingsCollection
         .find({ userEmail: userEmail })
         .toArray();
       res.json(result);
     });
-    app.delete("/listing/:_id" , async(req, res) => {
-      const { _id } = req.params;
-      const result = await listingsCollection.deleteOne({_id: new ObjectId(_id)})
-      res.json(result)
-    })
+    // app.get("/listing/:_id", async (req, res) => {
+    //   const { _id } = req.params;
+    //   const result = await listingsCollection
+    //     .findOne({ _id: new ObjectId(_id) })
+    //     .toArray();
+    //   res.json(result);
+    // });
+    app.delete("/listing/:petId", async (req, res) => {
+      const {petId } = req.params;
+      const result = await listingsCollection.deleteOne({
+        petId: new ObjectId(petId),
+      });
+      res.json(result);
+    });
     app.post("/listing", async (req, res) => {
       const listingData = req.body;
       const result = await listingsCollection.insertOne(listingData);
