@@ -41,10 +41,27 @@ async function run() {
       const result = await allpetCollection.findOne({ _id: new ObjectId(id) });
       res.json(result);
     });
+    app.delete("/all-pet/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await allpetCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.json(result);
+    });
+    app.patch("/all-pet/:id", async (req, res) => {
+      const { id } = req.params;
+      console.log(req.body)
+      const updateData = req.body;
+      const result = await allpetCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updateData },
+      ).toArray();
+      res.json(result);
+    });
 
     app.post("/all-pet", async (req, res) => {
       const allpetData = req.body;
-      console.log(allpetData  )
+      console.log(allpetData);
       const result = await allpetCollection.insertOne(allpetData);
       res.json(result);
     });
