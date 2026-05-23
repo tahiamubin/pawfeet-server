@@ -20,21 +20,22 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
     const db = client.db("petfeet");
     const allpetCollection = db.collection("allpets");
     const listingsCollection = db.collection("listings");
 
-    // all pet page
-
     app.get("/all-pet", async (req, res) => {
-      const result = await allpetCollection.find().toArray();
+      const { email } = req.query;
+      const query = email ? { email: email } : {};
+      const result = await allpetCollection.find(query).toArray();
       res.json(result);
     });
+
     app.get("/all-pet/:id", async (req, res) => {
       const { id } = req.params;
       const result = await allpetCollection.findOne({ _id: new ObjectId(id) });
@@ -43,51 +44,29 @@ async function run() {
 
     app.post("/all-pet", async (req, res) => {
       const allpetData = req.body;
-      //console.log(allpetData);
+      console.log(allpetData  )
       const result = await allpetCollection.insertOne(allpetData);
       res.json(result);
     });
 
-    // listings page
-
     app.get("/listing/:userEmail", async (req, res) => {
       const { userEmail } = req.params;
-      const result = await listingsCollection
-        .find({ userEmail: userEmail })
-        .toArray();
+      const result = await listingsCollection.find({ userEmail }).toArray();
       res.json(result);
     });
-    // app.get("/listing/:_id", async (req, res) => {
-    //   const { _id } = req.params;
-    //   const result = await listingsCollection
-    //     .findOne({ _id: new ObjectId(_id) })
-    //     .toArray();
-    //   res.json(result);
-    // });
-    app.delete("/listing/:petId", async (req, res) => {
-      const {petId } = req.params;
-      const result = await listingsCollection.deleteOne({
-        petId: new ObjectId(petId),
-      });
-      res.json(result);
-    });
+
     app.post("/listing", async (req, res) => {
       const listingData = req.body;
       const result = await listingsCollection.insertOne(listingData);
       res.json(result);
     });
-
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!",
-    );
   } finally {
-    // Ensures that the client will close when you finish/error
-    //await client.close();
+    // await client.close();
   }
 }
+
 run().catch(console.dir);
+
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
