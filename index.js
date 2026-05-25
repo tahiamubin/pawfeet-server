@@ -5,6 +5,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 dotenv.config();
 const port = process.env.PORT;
 const uri = process.env.MONGO_URI;
@@ -20,10 +21,34 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+const JWKS = createRemoteJWKSet(
+  new URL( `${process.env.CLIENT_URL}/api/auth/jwks`)
+)
+const verifyToken = async (req, res, next) => {
+  const authHeader = req?.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    req.user = payload; // make payload available to downstream handlers
+  } catch (error) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+
+  next();
+};
+
 
 async function run() {
   try {
-    await client.connect();
+    //await client.connect();
 
     const db = client.db("petfeet");
     const allpetCollection = db.collection("allpets");
@@ -36,7 +61,7 @@ async function run() {
       res.json(result);
     });
 
-    app.get("/all-pet/:id", async (req, res) => {
+    app.get("/all-pet/:id", verifyToken ,  async (req, res) => {
       const { id } = req.params;
       const result = await allpetCollection.findOne({ _id: new ObjectId(id) });
       res.json(result);
@@ -55,24 +80,24 @@ async function run() {
       const result = await allpetCollection.updateOne(
         { _id: new ObjectId(id) },
         { $set: updateData },
-      ).toArray();
+      );
       res.json(result);
     });
 
-    app.post("/all-pet", async (req, res) => {
+    app.post("/all-pet", verifyToken, async (req, res) => {
       const allpetData = req.body;
       console.log(allpetData);
       const result = await allpetCollection.insertOne(allpetData);
       res.json(result);
     });
 
-    app.get("/listing/:userEmail", async (req, res) => {
+    app.get("/listing/:userEmail", verifyToken,  async (req, res) => {
       const { userEmail } = req.params;
       const result = await listingsCollection.find({ userEmail }).toArray();
       res.json(result);
     });
 
-    app.post("/listing", async (req, res) => {
+    app.post("/listing", verifyToken, async (req, res) => {
       const listingData = req.body;
       const result = await listingsCollection.insertOne(listingData);
       res.json(result);
