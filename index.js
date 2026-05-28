@@ -22,8 +22,8 @@ const client = new MongoClient(uri, {
   },
 });
 const JWKS = createRemoteJWKSet(
-  new URL( `${process.env.CLIENT_URL}/api/auth/jwks`)
-)
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+);
 const verifyToken = async (req, res, next) => {
   const authHeader = req?.headers.authorization;
   if (!authHeader) {
@@ -37,14 +37,13 @@ const verifyToken = async (req, res, next) => {
 
   try {
     const { payload } = await jwtVerify(token, JWKS);
-    req.user = payload; // make payload available to downstream handlers
+    next(); // make payload available to downstream handlers
   } catch (error) {
     return res.status(403).json({ message: "Forbidden" });
   }
 
-  next();
+ 
 };
-
 
 async function run() {
   try {
@@ -61,7 +60,7 @@ async function run() {
       res.json(result);
     });
 
-    app.get("/all-pet/:id", verifyToken ,  async (req, res) => {
+    app.get("/all-pet/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const result = await allpetCollection.findOne({ _id: new ObjectId(id) });
       res.json(result);
@@ -75,7 +74,7 @@ async function run() {
     });
     app.patch("/all-pet/:id", async (req, res) => {
       const { id } = req.params;
-      console.log(req.body)
+      console.log(req.body);
       const updateData = req.body;
       const result = await allpetCollection.updateOne(
         { _id: new ObjectId(id) },
@@ -91,7 +90,7 @@ async function run() {
       res.json(result);
     });
 
-    app.get("/listing/:userEmail", verifyToken,  async (req, res) => {
+    app.get("/listing/:userEmail", verifyToken, async (req, res) => {
       const { userEmail } = req.params;
       const result = await listingsCollection.find({ userEmail }).toArray();
       res.json(result);
