@@ -21,49 +21,35 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
-// const JWKS = createRemoteJWKSet(
-//   new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
-// );
-// const verifyToken = async (req, res, next) => {
-//   const authHeader = req?.headers.authorization;
-//   if (!authHeader) {
-//     return res.status(401).json({ message: "Unauthorized" });
-//   }
-
-//   const token = authHeader.split(" ")[1];
-//   if (!token) {
-//     return res.status(401).json({ message: "Unauthorized" });
-//   }
-
-//   try {
-//     const { payload } = await jwtVerify(token, JWKS);
-//     next(); // make payload available to downstream handlers
-//   } catch (error) {
-//     return res.status(403).json({ message: "Forbidden" });
-//   }
-
-// };
 const JWKS = createRemoteJWKSet(
   new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+  // new URL("http://localhost:3000/api/auth/jwks"),
 );
+console.log(process.env.CLIENT_URL);
+//console.log(JWKS);
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req?.headers.authorization;
   if (!authHeader) {
-    return res.status(404).json({ message: "unauthorized" });
+    return res.status(401).json({ message: "Unauthorized" });
   }
   const token = authHeader.split(" ")[1];
   if (!token) {
-    return res.status(404).json({ message: "unauthorized" });
+    return res.status(401).json({ message: "Unauthorized" });
   }
+
   try {
     const { payload } = await jwtVerify(token, JWKS);
+    //const secret = new TextEncoder().encode(process.env.BETTER_AUTH_SECRET);
+    //const { payload } = await jwtVerify(token, secret);
+    req.user = payload;
+    console.log(payload);
     next();
   } catch (error) {
-    return res.status(404).json({ message: "unauthorized" });
+    console.log(error);
+    return res.status(403).json({ message: "Forbidden" });
   }
 };
-
 async function run() {
   try {
     //await client.connect();
@@ -102,22 +88,48 @@ async function run() {
       res.json(result);
     });
 
-    app.post("/all-pet", verifyToken, async (req, res) => {
+    app.post("/all-pet", async (req, res) => {
       const allpetData = req.body;
-      console.log(allpetData);
+      //console.log(allpetData);
       const result = await allpetCollection.insertOne(allpetData);
       res.json(result);
     });
 
+    // search
+    app.get("/all-pet", async (req, res) => {
+      const { email, search, species, gender } = req.query;
+
+      const query = {};
+
+      if (email) query.email = email;
+
+      if (search) {
+        query.$or = [
+          { petName: { $regex: search, $options: "i" } },
+          { breed: { $regex: search, $options: "i" } },
+          { location: { $regex: search, $options: "i" } },
+        ];
+      }
+
+      if (species) query.species = { $regex: species, $options: "i" };
+      if (gender) query.gender = { $regex: gender, $options: "i" };
+
+      const result = await allpetCollection.find(query).toArray();
+      res.json(result);
+    });
+
+    
     app.get("/listing/:userEmail", verifyToken, async (req, res) => {
       const { userEmail } = req.params;
       const result = await listingsCollection.find({ userEmail }).toArray();
       res.json(result);
     });
 
-    app.post("/listing", verifyToken, async (req, res) => {
-      const listingData = req.body;
-      const result = await listingsCollection.insertOne(listingData);
+    app.delete("/listing/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await listingsCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
       res.json(result);
     });
   } finally {
