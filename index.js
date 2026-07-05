@@ -40,8 +40,7 @@ const verifyToken = async (req, res, next) => {
 
   try {
     const { payload } = await jwtVerify(token, JWKS);
-    //const secret = new TextEncoder().encode(process.env.BETTER_AUTH_SECRET);
-    //const { payload } = await jwtVerify(token, secret);
+
     req.user = payload;
     console.log(payload);
     next();
@@ -79,7 +78,7 @@ async function run() {
     });
     app.patch("/all-pet/:id", async (req, res) => {
       const { id } = req.params;
-      console.log(req.body);
+      //console.log(req.body);
       const updateData = req.body;
       const result = await allpetCollection.updateOne(
         { _id: new ObjectId(id) },
@@ -88,37 +87,36 @@ async function run() {
       res.json(result);
     });
 
-    app.post("/all-pet", async (req, res) => {
+    app.post("/all-pet", verifyToken, async (req, res) => {
       const allpetData = req.body;
       //console.log(allpetData);
       const result = await allpetCollection.insertOne(allpetData);
       res.json(result);
     });
 
-    // search
-    app.get("/all-pet", async (req, res) => {
-      const { email, search, species, gender } = req.query;
-
-      const query = {};
-
-      if (email) query.email = email;
-
-      if (search) {
-        query.$or = [
-          { petName: { $regex: search, $options: "i" } },
-          { breed: { $regex: search, $options: "i" } },
-          { location: { $regex: search, $options: "i" } },
-        ];
-      }
-
-      if (species) query.species = { $regex: species, $options: "i" };
-      if (gender) query.gender = { $regex: gender, $options: "i" };
-
-      const result = await allpetCollection.find(query).toArray();
+    app.post("/listing", async (req, res) => {
+      const data = req.body;
+      const result = await listingsCollection.insertOne(data);
       res.json(result);
     });
 
-    
+    app.patch("/listing/status/:id", async (req, res) => {
+      const { id } = req.params;
+      const updateData= req.body;
+
+      const result = await listingsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updateData },
+      );
+      res.json(result);
+    });
+
+    app.get("/listing/pet/:petId", async (req, res) => {
+      const { petId } = req.params;
+      const result = await listingsCollection.find({ petId }).toArray();
+      res.json(result);
+    });
+
     app.get("/listing/:userEmail", verifyToken, async (req, res) => {
       const { userEmail } = req.params;
       const result = await listingsCollection.find({ userEmail }).toArray();
